@@ -62,39 +62,12 @@ class Home : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         appDB = AppDatabase.getDatabase(requireContext())
-
-        isMovieListAvailable()
+        
         readData()
 
     }
 
-    private fun isMovieListAvailable(){
-        val retrofit : Retrofit = Retrofit.Builder()
-            .baseUrl("http://task.auditflo.in/")
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-        val service : MovieListService = retrofit.create<MovieListService>(MovieListService::class.java)
-        val listCall : Call<MovieList> = service.getMovieList()
 
-
-
-        listCall.enqueue(object  : Callback<MovieList>{
-            override fun onResponse(call: Call<MovieList>, response: Response<MovieList>) {
-                if(!response.isSuccessful){
-                    Log.e("Error", "Server Response : ${response.code()} : ${response.message()}")
-                }
-                val movieList  = response.body()
-                movies  = movieList?.movieList as ArrayList<Movie>?
-                Log.i("movies" , "$movies")
-                writeData()
-            }
-
-            override fun onFailure(call: Call<MovieList>, t: Throwable) {
-                Log.e("error" , t!!.message.toString())
-            }
-
-        })
-    }
 
     private suspend fun setupRecyclerView(){
             withContext(Dispatchers.Main){
@@ -118,13 +91,6 @@ class Home : Fragment() {
             }
     }
 
-    private fun writeData(){
-        GlobalScope.launch(Dispatchers.IO){
-            for(i in movies!!){
-                appDB.movieDao().insert(i)
-            }
-        }
-    }
     private fun readData(){
         GlobalScope.launch{
             movies = appDB.movieDao().getAll() as ArrayList<Movie>

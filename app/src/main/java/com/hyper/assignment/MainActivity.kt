@@ -14,7 +14,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
 
-        replaceFragment(Home())
+        replaceFragment(Profile())
 
         binding.bottomNavigationView.setOnItemSelectedListener {
 
