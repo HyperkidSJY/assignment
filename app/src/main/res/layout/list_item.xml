@@ -26,7 +26,6 @@
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:padding="5dp">
-
             <de.hdodenhof.circleimageview.CircleImageView
                 android:id="@+id/iv_movie_image"
                 android:layout_width="70dp"
@@ -34,16 +33,12 @@
                 android:contentDescription="image"
                 android:src="@mipmap/ic_launcher_round"
                 app:civ_border_color="#757575" />
-
             <LinearLayout
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="10dp"
                 android:layout_marginEnd="2dp"
                 android:orientation="vertical">
-
-
-
                 <TextView
                     android:id="@+id/tvTitle"
                     android:layout_width="match_parent"
@@ -60,7 +55,6 @@
                     android:textColor="#606060"
                     android:textSize="16sp"
                     android:text="Year:" />
-
                 <TextView
                     android:id="@+id/tvCast"
                     android:layout_width="match_parent"

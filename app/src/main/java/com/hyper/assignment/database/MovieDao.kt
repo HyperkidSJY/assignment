@@ -22,4 +22,12 @@ interface MovieDao {
     @Delete
     suspend fun delete(movieEntity: Movie)
 
+    @Query("UPDATE movies_table SET isFavorite = 1 WHERE IMDBID LIKE :IMDBID")
+    suspend fun addFavorite(IMDBID: String)
+
+    @Query("SELECT * FROM movies_table WHERE isFavorite LIKE 1")
+    suspend fun getFavorites(): List<Movie>
+
+    @Query("UPDATE movies_table SET isFavorite = 0 WHERE IMDBID LIKE :IMDBID")
+    suspend fun unFavorite(IMDBID: String)
 }

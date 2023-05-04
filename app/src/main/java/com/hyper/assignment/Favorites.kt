@@ -1,25 +1,36 @@
 package com.hyper.assignment
 
+import android.content.Intent
+import android.icu.text.Transliterator.Position
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
+import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.hyper.assignment.adapters.MovieListAdapter
+import com.hyper.assignment.database.AppDatabase
+import com.hyper.assignment.models.Movie
+import com.hyper.assignment.utils.SwipeToDeleteCallback
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
-// TODO: Rename parameter arguments, choose names that match
-// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
+
 private const val ARG_PARAM1 = "param1"
 private const val ARG_PARAM2 = "param2"
 
-/**
- * A simple [Fragment] subclass.
- * Use the [Favorites.newInstance] factory method to
- * create an instance of this fragment.
- */
+
 class Favorites : Fragment() {
-    // TODO: Rename and change types of parameters
+
     private var param1: String? = null
     private var param2: String? = null
+    private lateinit var appDB : AppDatabase
+    private var movies : ArrayList<Movie>? = null
+    private lateinit var recyclerView : RecyclerView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,23 +48,53 @@ class Favorites : Fragment() {
         return inflater.inflate(R.layout.fragment_favorites, container, false)
     }
 
-    companion object {
-        /**
-         * Use this factory method to create a new instance of
-         * this fragment using the provided parameters.
-         *
-         * @param param1 Parameter 1.
-         * @param param2 Parameter 2.
-         * @return A new instance of fragment Favorites.
-         */
-        // TODO: Rename and change types and number of parameters
-        @JvmStatic
-        fun newInstance(param1: String, param2: String) =
-            Favorites().apply {
-                arguments = Bundle().apply {
-                    putString(ARG_PARAM1, param1)
-                    putString(ARG_PARAM2, param2)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        appDB = AppDatabase.getDatabase(requireContext())
+
+        getFavorites()
+    }
+
+    private fun getFavorites(){
+        GlobalScope.launch(Dispatchers.IO) {
+            movies = appDB.movieDao().getFavorites() as ArrayList<Movie>
+            setupRecyclerView()
+        }
+    }
+
+    private fun setupRecyclerView(){
+        GlobalScope.launch(Dispatchers.Main) {
+            recyclerView = view?.findViewById(R.id.rvMovieLists)!!
+            recyclerView.layoutManager = LinearLayoutManager(context)
+            recyclerView.setHasFixedSize(true)
+            val movieListAdapter = movies?.let { MovieListAdapter(requireContext(), it) }
+            recyclerView.adapter = movieListAdapter
+
+            val deleteSwipeHandler = object : SwipeToDeleteCallback(requireContext()){
+                override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                    val position = viewHolder.bindingAdapterPosition
+                    unFavorite(position)
+                    Toast.makeText(requireContext(),"unFavorited!!", Toast.LENGTH_SHORT).show()
+                    getFavorites()
                 }
             }
+            val deleteItemTouchHelper = ItemTouchHelper(deleteSwipeHandler)
+            deleteItemTouchHelper.attachToRecyclerView(recyclerView)
+
+            movieListAdapter?.setOnClickListener(object : MovieListAdapter.OnClickListener{
+                override fun onClick(position: Int, model: Movie) {
+                    val intent = Intent(context,MovieDetails::class.java)
+                    intent.putExtra(Home.EXTRA_MOVIE_DETAILS,model)
+                    startActivity(intent)
+                }
+            } )
+        }
     }
+
+    private fun unFavorite(position: Int){
+        GlobalScope.launch(Dispatchers.IO) {
+            appDB.movieDao().unFavorite(movies!![position].IMDBID)
+        }
+    }
+
 }

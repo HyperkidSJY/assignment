@@ -1,10 +1,13 @@
 package com.hyper.assignment
 
+
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -18,6 +21,7 @@ import com.hyper.assignment.utils.SwipeGesture
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -61,6 +65,7 @@ class Home : Fragment() {
 
         isMovieListAvailable()
         readData()
+
     }
 
     private fun isMovieListAvailable(){
@@ -71,6 +76,8 @@ class Home : Fragment() {
         val service : MovieListService = retrofit.create<MovieListService>(MovieListService::class.java)
         val listCall : Call<MovieList> = service.getMovieList()
 
+
+
         listCall.enqueue(object  : Callback<MovieList>{
             override fun onResponse(call: Call<MovieList>, response: Response<MovieList>) {
                 if(!response.isSuccessful){
@@ -78,6 +85,7 @@ class Home : Fragment() {
                 }
                 val movieList  = response.body()
                 movies  = movieList?.movieList as ArrayList<Movie>?
+                Log.i("movies" , "$movies")
                 writeData()
             }
 
@@ -88,20 +96,26 @@ class Home : Fragment() {
         })
     }
 
-    private fun setupRecyclerView(){
-        GlobalScope.launch(Dispatchers.Main){
-            recyclerView = view?.findViewById(R.id.rvMovieLists)!!
-            recyclerView.layoutManager = LinearLayoutManager(context)
-            recyclerView.setHasFixedSize(true)
-            val movieListAdapter = movies?.let { MovieListAdapter(requireContext(), it) }
-            recyclerView.adapter = movieListAdapter
+    private suspend fun setupRecyclerView(){
+            withContext(Dispatchers.Main){
+                recyclerView = view?.findViewById(R.id.rvMovieLists)!!
+                recyclerView.layoutManager = LinearLayoutManager(context)
+                recyclerView.setHasFixedSize(true)
+                val movieListAdapter = movies?.let { MovieListAdapter(requireContext(), it) }
+                recyclerView.adapter = movieListAdapter
 
-            swipeGestures(recyclerView)
-            if(recyclerView.adapter?.itemCount == 0){
-                isMovieListAvailable()
+
+
+                movieListAdapter?.setOnClickListener(object : MovieListAdapter.OnClickListener{
+                    override fun onClick(position: Int, model: Movie) {
+                        val intent = Intent(context,MovieDetails::class.java)
+                        intent.putExtra(EXTRA_MOVIE_DETAILS,model)
+                        startActivity(intent)
+                    }
+                } )
+                swipeGestures(recyclerView)
+
             }
-        }
-
     }
 
     private fun writeData(){
@@ -116,29 +130,41 @@ class Home : Fragment() {
             movies = appDB.movieDao().getAll() as ArrayList<Movie>
             setupRecyclerView()
         }
+
+
     }
 
     private fun deleteMoviesByPosition(position : Int) {
-        GlobalScope.launch{
+        GlobalScope.launch(Dispatchers.IO){
             appDB.movieDao().delete(movies!![position])
         }
     }
 
 
+    private fun addFavorites(position: Int){
 
-
+        GlobalScope.launch(Dispatchers.IO) {
+            appDB.movieDao().addFavorite(movies!![position].IMDBID)
+        }
+    }
 
     private fun swipeGestures(itemRv : RecyclerView){
         val swipeGesture=object : SwipeGesture(requireContext()) {
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-                val position = viewHolder.bindingAdapterPosition
+                val position = viewHolder.adapterPosition
                 when (direction) {
                     ItemTouchHelper.LEFT -> {
                         deleteMoviesByPosition(position)
+                        Toast.makeText(requireContext(),"Deleted!!",Toast.LENGTH_SHORT).show()
                         readData()
-                        itemRv.adapter?.notifyItemRemoved(position)
+                        recyclerView.adapter?.notifyItemRemoved(position)
+
                     }
                     ItemTouchHelper.RIGHT -> {
+                        addFavorites(position)
+                        Toast.makeText(requireContext(),"added to Favorites",Toast.LENGTH_SHORT).show()
+                        readData()
+                        recyclerView.adapter?.notifyItemChanged(position)
 
                     }
                 }
@@ -146,6 +172,10 @@ class Home : Fragment() {
         }
         val touchHelper = ItemTouchHelper(swipeGesture)
         touchHelper.attachToRecyclerView(itemRv)
+    }
+
+    companion object{
+        var EXTRA_MOVIE_DETAILS = "extra_movie_details"
     }
 }
 

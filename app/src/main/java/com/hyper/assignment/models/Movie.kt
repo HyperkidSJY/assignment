@@ -29,5 +29,6 @@ data class Movie(
     val MoviePoster : String?,
     val Director : String?,
     val Writers : String?,
-    val Cast : String?
+    val Cast : String?,
+    val isFavorite : Boolean = false
 ) : Serializable

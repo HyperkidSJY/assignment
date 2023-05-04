@@ -22,6 +22,7 @@ class MovieListAdapter(private  val context : Context, private val list: ArrayLi
             val tvCast = binding.tvCast
             val tvYear = binding.tvYear
         }
+    private var onClickListener : OnClickListener? = null
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         return ViewHolder(
             ListItemBinding.inflate(
@@ -37,12 +38,22 @@ class MovieListAdapter(private  val context : Context, private val list: ArrayLi
         holder.tvCast.text = model.Cast
         holder.tvRuntime.text = model.Runtime
         holder.tvYear.text = model.Year
+        holder.itemView.setOnClickListener{
+            if(onClickListener != null ){
+                onClickListener!!.onClick(position,model)
+            }
+        }
     }
 
     override fun getItemCount(): Int {
         return list.size
     }
 
-
+    fun setOnClickListener(onClickListener: OnClickListener) {
+        this.onClickListener = onClickListener
+    }
+    interface OnClickListener {
+        fun onClick(position: Int, model : Movie)
+    }
 
 }
