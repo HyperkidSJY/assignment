@@ -8,6 +8,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -28,9 +29,9 @@ class Favorites : Fragment() {
 
     private var param1: String? = null
     private var param2: String? = null
-    private lateinit var appDB : AppDatabase
-    private var movies : ArrayList<Movie>? = null
-    private lateinit var recyclerView : RecyclerView
+    private lateinit var appDB: AppDatabase
+    private var movies: ArrayList<Movie>? = null
+    private lateinit var recyclerView: RecyclerView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,44 +56,45 @@ class Favorites : Fragment() {
         getFavorites()
     }
 
-    private fun getFavorites(){
-        GlobalScope.launch(Dispatchers.IO) {
-            movies = appDB.movieDao().getFavorites() as ArrayList<Movie>
-            setupRecyclerView()
-        }
-    }
-
-    private fun setupRecyclerView(){
-        GlobalScope.launch(Dispatchers.Main) {
-            recyclerView = view?.findViewById(R.id.rvMovieLists)!!
-            recyclerView.layoutManager = LinearLayoutManager(context)
-            recyclerView.setHasFixedSize(true)
-            val movieListAdapter = movies?.let { MovieListAdapter(requireContext(), it) }
-            recyclerView.adapter = movieListAdapter
-
-            val deleteSwipeHandler = object : SwipeToDeleteCallback(requireContext()){
-                override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-                    val position = viewHolder.bindingAdapterPosition
-                    unFavorite(position)
-                    Toast.makeText(requireContext(),"unFavorited!!", Toast.LENGTH_SHORT).show()
-                    getFavorites()
-                }
+    private fun getFavorites() {
+        lifecycleScope.launch {
+            appDB.movieDao().getFavorites().collect {
+                movies = ArrayList(it)
+                setupRecyclerView()
             }
-            val deleteItemTouchHelper = ItemTouchHelper(deleteSwipeHandler)
-            deleteItemTouchHelper.attachToRecyclerView(recyclerView)
 
-            movieListAdapter?.setOnClickListener(object : MovieListAdapter.OnClickListener{
-                override fun onClick(position: Int, model: Movie) {
-                    val intent = Intent(context,MovieDetails::class.java)
-                    intent.putExtra(Home.EXTRA_MOVIE_DETAILS,model)
-                    startActivity(intent)
-                }
-            } )
         }
     }
 
-    private fun unFavorite(position: Int){
-        GlobalScope.launch(Dispatchers.IO) {
+    private fun setupRecyclerView() {
+        recyclerView = view?.findViewById(R.id.rvMovieLists)!!
+        recyclerView.layoutManager = LinearLayoutManager(context)
+        recyclerView.setHasFixedSize(true)
+        val movieListAdapter = movies?.let { MovieListAdapter(requireContext(), it) }
+        recyclerView.adapter = movieListAdapter
+
+        val deleteSwipeHandler = object : SwipeToDeleteCallback(requireContext()) {
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                val position = viewHolder.bindingAdapterPosition
+                unFavorite(position)
+                Toast.makeText(requireContext(), "unFavorited!!", Toast.LENGTH_SHORT).show()
+                getFavorites()
+            }
+        }
+        val deleteItemTouchHelper = ItemTouchHelper(deleteSwipeHandler)
+        deleteItemTouchHelper.attachToRecyclerView(recyclerView)
+
+        movieListAdapter?.setOnClickListener(object : MovieListAdapter.OnClickListener {
+            override fun onClick(position: Int, model: Movie) {
+                val intent = Intent(context, MovieDetails::class.java)
+                intent.putExtra(Home.EXTRA_MOVIE_DETAILS, model)
+                startActivity(intent)
+            }
+        })
+    }
+
+    private fun unFavorite(position: Int) {
+        lifecycleScope.launch {
             appDB.movieDao().unFavorite(movies!![position].IMDBID)
         }
     }

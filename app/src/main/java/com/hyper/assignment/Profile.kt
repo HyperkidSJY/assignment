@@ -6,6 +6,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.lifecycle.lifecycleScope
 import com.hyper.assignment.database.AppDatabase
 import com.hyper.assignment.models.Movie
 import com.hyper.assignment.models.MovieList
@@ -80,9 +81,11 @@ class Profile : Fragment() {
         })
     }
     private fun writeData(){
-        GlobalScope.launch(Dispatchers.IO){
-            for(i in movies!!){
-                appDB.movieDao().insert(i)
+        if(!movies.isNullOrEmpty()){
+            lifecycleScope.launch {
+                for(i in movies!!){
+                    appDB.movieDao().insert(i)
+                }
             }
         }
     }
