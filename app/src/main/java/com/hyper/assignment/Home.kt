@@ -129,6 +129,8 @@ class Home : Fragment() {
         touchHelper.attachToRecyclerView(itemRv)
     }
 
+
+
     companion object {
         var EXTRA_MOVIE_DETAILS = "extra_movie_details"
     }
