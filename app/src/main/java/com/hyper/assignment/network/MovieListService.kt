@@ -9,4 +9,7 @@ interface MovieListService {
     @GET("1.json")
     fun getMovieList() :Call<MovieList>
 
+    @GET("2.json")
+    fun getMovieList2() :Call<MovieList>
+
 }

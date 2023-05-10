@@ -77,6 +77,7 @@ class MainActivity : AppCompatActivity() {
                 movies  = movieList?.movieList as ArrayList<Movie>?
                 Log.i("movies" , "$movies")
                 writeData()
+                isMovieList2Available()
             }
 
             override fun onFailure(call: Call<MovieList>, t: Throwable) {
@@ -85,6 +86,35 @@ class MainActivity : AppCompatActivity() {
 
         })
     }
+
+    private fun isMovieList2Available(){
+        val retrofit : Retrofit = Retrofit.Builder()
+            .baseUrl("http://task.auditflo.in/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+        val service : MovieListService = retrofit.create(MovieListService::class.java)
+        val listCall : Call<MovieList> = service.getMovieList2()
+
+
+
+        listCall.enqueue(object  : Callback<MovieList> {
+            override fun onResponse(call: Call<MovieList>, response: Response<MovieList>) {
+                if(!response.isSuccessful){
+                    Log.e("Error", "Server Response : ${response.code()} : ${response.message()}")
+                }
+                val movieList  = response.body()
+                movies  = movieList?.movieList as ArrayList<Movie>?
+                Log.i("movies" , "$movies")
+                writeData()
+            }
+
+            override fun onFailure(call: Call<MovieList>, t: Throwable) {
+                Log.e("error" , t.message.toString())
+            }
+
+        })
+    }
+
     private fun writeData(){
         if(!movies.isNullOrEmpty()){
             lifecycleScope.launch {
